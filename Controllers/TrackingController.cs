@@ -59,54 +59,46 @@ namespace L_Connect.Controllers
             return RedirectToAction(nameof(Result), new { trackingNumber = model.TrackingNumber });
         }
 
-        // GET: /Tracking/Result/{trackingNumber} - Displays tracking results
         [HttpGet]
         public async Task<IActionResult> Result(string trackingNumber)
         {
-            // Check if tracking number was provided
             if (string.IsNullOrEmpty(trackingNumber))
             {
-                return RedirectToAction(nameof(Index)); // Redirect to the form if no tracking number
+                return RedirectToAction(nameof(Index));
             }
 
-            // Retrieve the shipment from the database using the service
             var shipment = await _shipmentService.GetShipmentByTrackingNumberAsync(trackingNumber);
             if (shipment == null)
             {
-                // If no shipment found, show the NotFound view
                 return View("NotFound", trackingNumber);
             }
 
-            // Create and populate the view model for the tracking result
             var viewModel = new TrackingResultViewModel
             {
-                TrackingNumber = shipment.TrackingNumber, // Set the tracking number
-                CurrentStatus = shipment.CurrentStatus, // Set current shipment status
-                OriginAddress = shipment.OriginAddress, // Set origin address
-                DestinationAddress = shipment.DestinationAddress, // Set destination address
-                CurrentLocation = shipment.CurrentLocation, // Set current location
-                CreatedAt = shipment.CreatedAt, // Set creation date
-                EstimatedDeliveryDate = shipment.EstimatedDeliveryDate, // Set estimated delivery date
-                // Check if user is authenticated and has CLIENT role to determine document access
+                TrackingNumber = shipment.TrackingNumber,
+                CurrentStatus = shipment.CurrentStatus,
+                OriginAddress = shipment.OriginAddress,
+                DestinationAddress = shipment.DestinationAddress,
+                CurrentLocation = shipment.CurrentLocation,
+                CreatedAt = shipment.CreatedAt,
+                EstimatedDeliveryDate = shipment.EstimatedDeliveryDate,
                 CanAccessDocuments = User.Identity.IsAuthenticated && User.IsInRole("CLIENT"),
-                StatusHistory = new List<TrackingResultViewModel.StatusUpdateInfo>() // Initialize empty list
+                StatusHistory = new List<TrackingResultViewModel.StatusUpdateInfo>()
             };
 
-            // Retrieve the shipment status history from the database
+            // This part is crucial: it fetches every scan logged in the history
             var statusHistory = await _shipmentService.GetShipmentsByStatusHistoryAsync(shipment.ShipmentId);
             if (statusHistory != null && statusHistory.Count > 0)
             {
-                // Map each status update to the view model's StatusUpdateInfo class
                 viewModel.StatusHistory = statusHistory.Select(s => new TrackingResultViewModel.StatusUpdateInfo
                 {
-                    Status = s.Status, // Set status text
-                    Location = s.Location, // Set location
-                    Notes = s.Notes, // Set notes
-                    UpdatedAt = s.UpdatedAt // Set update timestamp
+                    Status = s.Status,
+                    Location = s.Location,
+                    Notes = s.Notes,
+                    UpdatedAt = s.UpdatedAt
                 }).ToList();
             }
 
-            // Return the Result view with the populated view model
             return View(viewModel);
         }
 

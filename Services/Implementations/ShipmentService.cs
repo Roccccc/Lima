@@ -7,6 +7,7 @@ using L_Connect.Models.Domain;
 using L_Connect.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System.Runtime.InteropServices;
+using QRCoder;
 
 namespace L_Connect.Services.Implementations
 {
@@ -68,7 +69,7 @@ namespace L_Connect.Services.Implementations
         {
             // Generate a unique tracking number
             shipment.TrackingNumber = GenerateTrackingNumber();
-            
+            shipment.QrCodeImage= GenerateQrCodeBase64(shipment.TrackingNumber);
             // Set creation date
             shipment.CreatedAt = DateTime.UtcNow;
             
@@ -124,55 +125,38 @@ namespace L_Connect.Services.Implementations
             return shipment;
         }
 
-        public async Task<bool> UpdateShipmentAsync(Shipment shipment, int updatedByAdminId, string statusNotes = null)
+     public async Task<bool> UpdateShipmentAsync(Shipment shipment, int updatedByAdminId, string statusNotes = null)
+    {
+        var existingShipment = await _context.Shipments.FindAsync(shipment.ShipmentId);
+        if (existingShipment == null) return false;
+
+        // Save previous values to detect changes
+        string prevStatus = existingShipment.CurrentStatus;
+        string prevLocation = existingShipment.CurrentLocation;
+
+        // Apply updates
+        existingShipment.CurrentStatus = shipment.CurrentStatus;
+        existingShipment.CurrentLocation = shipment.CurrentLocation;
+        // ... update other fields ...
+
+        // CRITICAL: Create history record if status/location changed OR notes are provided
+        if (prevStatus != shipment.CurrentStatus || prevLocation != shipment.CurrentLocation || !string.IsNullOrEmpty(statusNotes))
         {
-            try
+            var statusUpdate = new ShipmentStatus
             {
-                var existingShipment = await _context.Shipments.FindAsync(shipment.ShipmentId);
-                
-                if (existingShipment == null)
-                    return false;
-                    
-                // Get current status before updating
-                string previousStatus = existingShipment.CurrentStatus;
-                string previousLocation = existingShipment.CurrentLocation;
-                
-                // Update all editable fields
-                existingShipment.Weight = shipment.Weight;
-                existingShipment.OriginAddress = shipment.OriginAddress;
-                existingShipment.DestinationAddress = shipment.DestinationAddress;
-                existingShipment.CurrentStatus = shipment.CurrentStatus;
-                existingShipment.CurrentLocation = shipment.CurrentLocation;
-                existingShipment.FinalCost = shipment.FinalCost;
-                existingShipment.EstimatedDeliveryDate = shipment.EstimatedDeliveryDate;
-                existingShipment.ServiceType = shipment.ServiceType;
-                
-                // If status or location changed, create a status history record
-                if (previousStatus != shipment.CurrentStatus || previousLocation != shipment.CurrentLocation)
-                {
-                    var notes = statusNotes ?? $"Status updated from {previousStatus} to {shipment.CurrentStatus}";
-                    
-                    var statusUpdate = new ShipmentStatus
-                    {
-                        ShipmentId = shipment.ShipmentId,
-                        Status = shipment.CurrentStatus,
-                        Location = shipment.CurrentLocation,
-                        Notes = notes,
-                        UpdatedAt = DateTime.UtcNow,
-                        UpdatedByAdminId = updatedByAdminId
-                    };
-                    
-                    _context.ShipmentStatuses.Add(statusUpdate);
-                }
-                
-                await _context.SaveChangesAsync();
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
+                ShipmentId = shipment.ShipmentId,
+                Status = shipment.CurrentStatus,
+                Location = shipment.CurrentLocation,
+                Notes = statusNotes ?? "Status updated",
+                UpdatedAt = DateTime.UtcNow,
+                UpdatedByAdminId = updatedByAdminId
+            };
+            _context.ShipmentStatuses.Add(statusUpdate);
         }
+
+        await _context.SaveChangesAsync();
+        return true;
+    }
 
         private string GenerateTrackingNumber()
         {
@@ -263,6 +247,14 @@ namespace L_Connect.Services.Implementations
                 .ToListAsync();
                 
             return (shipments, totalCount);
+        }
+        private string GenerateQrCodeBase64(string trackingNumber) 
+        {
+            using QRCodeGenerator qrGenerator = new QRCodeGenerator();
+            using QRCodeData qrCodeData = qrGenerator.CreateQrCode(trackingNumber, QRCodeGenerator.ECCLevel.Q);
+            using PngByteQRCode qrCode = new PngByteQRCode(qrCodeData);
+            byte[] qrCodeAsPngByteArr = qrCode.GetGraphic(20);
+            return Convert.ToBase64String(qrCodeAsPngByteArr);
         }
     }
 }

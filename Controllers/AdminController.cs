@@ -12,6 +12,8 @@ using L_Connect.Models;
 using L_Connect.Data;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
+using Microsoft.AspNetCore.Authorization;
+
 
 namespace L_Connect.Controllers
 {
@@ -423,6 +425,46 @@ namespace L_Connect.Controllers
             
             // Default fallback
             return 1; 
+        }
+        [Authorize(Roles = "ADMIN")]
+        [HttpGet]
+        public async Task<IActionResult> ScanParcel(string trackingNumber)
+        {
+            if (string.IsNullOrWhiteSpace(trackingNumber))
+                return BadRequest("Tracking number is required.");
+
+            var shipment = await _shipmentService.GetShipmentByTrackingNumberAsync(trackingNumber);
+
+            if (shipment == null)
+                return NotFound();
+
+            // This view will show "Point C"
+            return View(shipment);
+        }
+        [Authorize(Roles = "ADMIN")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ConfirmHubArrival(int shipmentId, string currentHubName)
+        {
+            var shipment = await _shipmentService.GetShipmentByIdAsync(shipmentId);
+            if (shipment == null) return NotFound();
+
+            // Ensure these fields are explicitly set so the service detects a change
+            shipment.CurrentLocation = currentHubName ?? "Transit Hub";
+            shipment.CurrentStatus = "In Transit";
+
+            // IMPORTANT: The third parameter is the 'statusNotes' that creates the history log
+            var result = await _shipmentService.UpdateShipmentAsync(
+                shipment, 
+                GetCurrentAdminId(), 
+                $"Parcel scanned and arrived at: {shipment.CurrentLocation}"
+            );
+
+            if (result)
+            {
+                TempData["SuccessMessage"] = "Scan logged and history updated.";
+            }
+            return RedirectToAction(nameof(Dashboard));
         }
     }
 }

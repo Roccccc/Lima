@@ -1,0 +1,80 @@
+@model L_Connect.Models.Domain.Shipment
+@{
+    ViewData["Title"] = "Scan Parcel - Hub Arrival";
+    Layout = "_AdminLayout";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6 text-center">
+            
+            <div class="mb-4">
+                <span class="badge bg-secondary mb-2">Tracking Number</span>
+                <h2 class="h3 fw-bold">@Model.TrackingNumber</h2>
+            </div>
+
+            <div class="card border-primary shadow-sm mb-5">
+                <div class="card-header bg-primary text-white py-3">
+                    <h3 class="mb-0 h5"><i class="bi bi-geo-alt-fill me-2"></i>ROUTING TO (Point C)</h3>
+                </div>
+                <div class="card-body py-4">
+                    <h1 class="display-5 fw-bold text-dark">@Model.DestinationAddress</h1>
+                    <p class="text-muted mt-2 mb-0">Please ensure the parcel is sorted for this destination.</p>
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <h4 class="h5 text-start mb-4">Confirm Arrival at This Hub</h4>
+                    
+                    <form asp-action="ConfirmHubArrival" asp-controller="Admin" method="post">
+                        <input type="hidden" name="shipmentId" value="@Model.ShipmentId" />
+
+                        <div class="mb-4 text-start">
+                            <label class="form-label fw-bold">Current Hub Location Name</label>
+                            <div class="input-group input-group-lg">
+                                <span class="input-group-text bg-white"><i class="bi bi-building"></i></span>
+                                <input type="text" name="currentHubName" class="form-control" 
+                                       placeholder="e.g., Shenzhen Hub / Toronto Center" 
+                                       required autofocus />
+                            </div>
+                            <div class="form-text">This will be logged as the parcel's current location.</div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg py-3">
+                                <i class="bi bi-check-circle-fill me-2"></i> Confirm & Log Arrival
+                            </button>
+                            <a asp-action="Dashboard" asp-controller="Admin" class="btn btn-link text-decoration-none">
+                                Cancel and Return to Dashboard
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .display-5 {
+            font-size: 2.2rem;
+            line-height: 1.2;
+        }
+        .card {
+            border-radius: 12px;
+        }
+        .input-group-text {
+            border-right: none;
+        }
+        .form-control {
+            border-left: none;
+        }
+        .form-control:focus {
+            box-shadow: none;
+            border-color: #dee2e6;
+        }
+    </style>
+}

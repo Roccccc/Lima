@@ -165,6 +165,9 @@
                                                     <a href="@Url.Action("EditShipment", "Admin", new { id = shipment.ShipmentId })" class="btn btn-sm btn-outline-warning" title="Edit Shipment">
                                                         <i class="bi bi-arrow-repeat"></i>
                                                     </a>
+                                                    <a href="@Url.Action("ScanParcel", "Admin", new { trackingNumber = shipment.TrackingNumber })" class="btn btn-sm btn-outline-dark" title="Scan Parcel">
+                                                        <i class="bi bi-qr-code-scan"></i>
+                                                    </a>
                                                     <a href="@Url.Action("Upload", "Document", new { shipmentId = shipment.ShipmentId })" class="btn btn-sm btn-outline-info" title="Upload Documents">
                                                         <i class="bi bi-file-earmark-arrow-up"></i>
                                                     </a>

@@ -52,6 +52,14 @@
                         <h5>Origin:</h5>
                         <p class="bg-light p-2 rounded">@Model.Shipment.OriginAddress</p>
                     </div>
+                    @if (!string.IsNullOrEmpty(Model.Shipment.QrCodeImage))
+                    {
+                        <div class="text-center mt-4">
+                            <h5>Parcel QR Code</h5>
+                            <img src="data:image/png;base64,@Model.Shipment.QrCodeImage" alt="Shipment QR Code" style="width:200px;" />
+                            <p class="small text-muted">Scan this code at Hub B to log arrival.</p>
+                        </div>
+                    }
                     <div>
                         <h5>Destination:</h5>
                         <p class="bg-light p-2 rounded">@Model.Shipment.DestinationAddress</p>

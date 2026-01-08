@@ -23,6 +23,8 @@ namespace L_Connect.Models.Domain
         [ForeignKey("Admin")]
         public int? CreatedByAdminId { get; set; }
         public virtual User Admin { get; set; }
+
+        public string? QrCodeImage { get; set; }
         
         [ForeignKey("Pricing")]
         public int? AppliedPriceId { get; set; }
